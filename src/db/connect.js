@@ -1,12 +1,18 @@
 import mongoose from 'mongoose';
 
 /**
- * TODO: Connect to MongoDB
+ * Connects to MongoDB using the provided URI.
  *
- * 1. Check if uri is provided (throw error if not: "MongoDB URI is required")
- * 2. Connect using mongoose.connect(uri)
- * 3. Return mongoose.connection
+ * @param {string} uri - MongoDB connection string
+ * @returns {Promise<mongoose.Connection>} Active mongoose connection
+ * @throws {Error} If URI is missing or connection fails
  */
 export async function connectDB(uri) {
-  // Your code here
+  if (!uri) {
+    throw new Error('MongoDB URI is required');
+  }
+
+  await mongoose.connect(uri);
+
+  return mongoose.connection;
 }

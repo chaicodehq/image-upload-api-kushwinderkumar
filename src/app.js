@@ -9,20 +9,47 @@ import { notFound } from './middlewares/notFound.middleware.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * TODO: Create Express app
+ * Creates and configures the Express application.
  *
- * 1. Create app with express()
- * 2. Add express.json() middleware
- * 3. Create uploads directories if they don't exist:
- *    - uploads/
- *    - uploads/thumbnails/
- *    Use fs.mkdirSync with { recursive: true }
- * 4. Add GET /health route → { ok: true }
- * 5. Mount image routes at /api/images
- * 6. Add notFound middleware
- * 7. Add errorHandler middleware (must be last!)
- * 8. Return app
+ * Responsibilities:
+ *  - Parse JSON bodies
+ *  - Ensure uploads/ and uploads/thumbnails/ directories exist
+ *  - Expose GET /health for liveness checks
+ *  - Mount image API routes at /api/images
+ *  - Handle 404s and global errors
+ *
+ * @returns {import('express').Application}
  */
 export function createApp() {
-  // Your code here
+  const app = express();
+
+  // ── Body parsing ────────────────────────────────────────────────────────────
+  app.use(express.json());
+
+  // ── Ensure upload directories exist ─────────────────────────────────────────
+  const uploadsDir = path.join(__dirname, '../uploads');
+  const thumbnailsDir = path.join(uploadsDir, 'thumbnails');
+
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  if (!fs.existsSync(thumbnailsDir)) {
+    fs.mkdirSync(thumbnailsDir, { recursive: true });
+  }
+
+  // ── Health check ─────────────────────────────────────────────────────────────
+  app.get('/health', (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
+
+  // ── API routes ───────────────────────────────────────────────────────────────
+  app.use('/api/images', imageRoutes);
+
+  // ── 404 handler (must come after all routes) ─────────────────────────────────
+  app.use(notFound);
+
+  // ── Global error handler (must be last) ──────────────────────────────────────
+  app.use(errorHandler);
+
+  return app;
 }

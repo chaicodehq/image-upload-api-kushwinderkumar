@@ -1,25 +1,52 @@
 /**
- * TODO: Global error handler
+ * Global error-handling middleware.
+ * Must be registered LAST in the Express middleware chain.
  *
- * Handle different error types:
- *
- * 1. Multer file size error (err.code === 'LIMIT_FILE_SIZE'):
- *    - Return 400 with { error: { message: 'File size exceeds 5MB limit' } }
- *
- * 2. Multer file type error (err.message includes 'Invalid file type'):
- *    - Return 400 with { error: { message: err.message } }
- *
- * 3. Mongoose validation error (err.name === 'ValidationError'):
- *    - Extract messages from err.errors
- *    - Return 400 with { error: { message: 'combined messages' } }
- *
- * 4. Mongoose duplicate key error (err.code === 11000):
- *    - Return 409 with { error: { message: 'Resource already exists' } }
- *
- * 5. Default error:
- *    - Return status from err.status or 500
- *    - { error: { message: err.message || 'Internal server error' } }
+ * Handles (in priority order):
+ *  1. Multer file-size limit exceeded
+ *  2. Multer invalid file type
+ *  3. Mongoose validation errors
+ *  4. Mongoose duplicate-key errors
+ *  5. Everything else (generic 500)
  */
-export function errorHandler(err, req, res, next) {
-  // Your code here
+export function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-vars
+  // ── Multer: file too large ─────────────────────────────────────────────────
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      error: { message: 'File size exceeds 5MB limit' },
+    });
+  }
+
+  // ── Multer: unsupported file type ──────────────────────────────────────────
+  if (err.message && err.message.includes('Invalid file type')) {
+    return res.status(400).json({
+      error: { message: err.message },
+    });
+  }
+
+  // ── Mongoose: schema validation failure ───────────────────────────────────
+  if (err.name === 'ValidationError') {
+    const messages = Object.values(err.errors)
+      .map((e) => e.message)
+      .join(', ');
+
+    return res.status(400).json({
+      error: { message: messages },
+    });
+  }
+
+  // ── Mongoose: duplicate unique key ────────────────────────────────────────
+  if (err.code === 11000) {
+    return res.status(409).json({
+      error: { message: 'Resource already exists' },
+    });
+  }
+
+  // ── Default: unexpected server error ──────────────────────────────────────
+  const status = err.status || 500;
+  const message = err.message || 'Internal server error';
+
+  return res.status(status).json({
+    error: { message },
+  });
 }

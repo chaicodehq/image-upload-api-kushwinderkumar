@@ -10,19 +10,26 @@ import {
 import { upload } from '../middlewares/upload.middleware.js';
 import { validateObjectId } from '../middlewares/validateObjectId.middleware.js';
 
-/**
- * TODO: Define image routes
- *
- * POST   /                  → uploadImage (use upload.single('image') middleware)
- * GET    /                  → listImages
- * GET    /:id               → getImage (use validateObjectId middleware)
- * GET    /:id/download      → downloadImage (use validateObjectId middleware)
- * GET    /:id/thumbnail     → downloadThumbnail (use validateObjectId middleware)
- * DELETE /:id               → deleteImage (use validateObjectId middleware)
- */
-
 const router = Router();
 
-// Your routes here
+// ── Image routes ──────────────────────────────────────────────────────────────
+
+/** Upload a new image (multipart/form-data, field name: "image") */
+router.post('/', upload.single('image'), uploadImage);
+
+/** List all images with pagination, filtering, and sorting */
+router.get('/', listImages);
+
+/** Get metadata for a single image */
+router.get('/:id', validateObjectId, getImage);
+
+/** Download the original full-resolution image */
+router.get('/:id/download', validateObjectId, downloadImage);
+
+/** Download the 200×200 JPEG thumbnail */
+router.get('/:id/thumbnail', validateObjectId, downloadThumbnail);
+
+/** Delete an image and its associated files */
+router.delete('/:id', validateObjectId, deleteImage);
 
 export default router;
